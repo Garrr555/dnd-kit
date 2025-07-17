@@ -11,6 +11,10 @@ import ModalTask from "@/components/ModalTask";
 export default function Home() {
   const [tasks, setTasks] = useState<ITask[]>([...INITZIAL_TASK]);
   const [showModalAddTask, setShowModalAddTask] = useState(false);
+  const [selectedTask, setSelectedTask] = useState<{
+    activity: string;
+    task: ITask;
+  } | null>(null);
 
   //load tasks form initial render
   useEffect(() => {
@@ -54,16 +58,40 @@ export default function Home() {
     };
 
     setTasks((prevTasks) => [...prevTasks, newTask]);
-    
+
     event.currentTarget.reset();
     setShowModalAddTask(false);
-    }
+  };
+
+  const handleUpdateTask = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const formData = new FormData(event.currentTarget);
+
+    const updatesTask: ITask = {
+      id: selectedTask?.task?.id as string,
+      title: formData.get("title") as string,
+      description: formData.get("description") as string,
+      status: selectedTask?.task?.status as ITask["status"],
+    };
+
+    setTasks((prevTasks) =>
+      prevTasks.map((task) => (task.id === updatesTask.id ? updatesTask : task))
+    );
+
+    event.currentTarget.reset();
+    setSelectedTask(null);
+  };
 
   return (
     <main className="min-h-screen p-4 flex flex-col">
       <div className="mb-8 flex items-center justify-between">
         <h1 className="text-2xl font-bold text-neutral-700">Task Management</h1>
-        <Button onClick={() => setShowModalAddTask(true)} className="bg-blue-500">Add Task</Button>
+        <Button
+          onClick={() => setShowModalAddTask(true)}
+          className="bg-blue-500"
+        >
+          Add Task
+        </Button>
       </div>
       <div className="flex gap-8 flex-1">
         <DndContext onDragEnd={handleDragEnd}>
@@ -72,6 +100,7 @@ export default function Home() {
               key={column.id}
               column={column}
               tasks={tasks.filter((task) => task.status === column.id)}
+              setSelectedTask={setSelectedTask}
             />
           ))}
         </DndContext>
@@ -81,6 +110,15 @@ export default function Home() {
         <ModalTask
           onCancel={() => setShowModalAddTask(false)}
           onSubmit={handleCreateTask}
+        />
+      )}
+
+      {selectedTask?.activity === "update" && (
+        <ModalTask
+          onSubmit={handleUpdateTask}
+          onCancel={() => setSelectedTask(null)}
+          selectedTask={selectedTask.task}
+          type="Update"
         />
       )}
     </main>
