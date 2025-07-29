@@ -15,7 +15,7 @@ export default function TaskCard(props: TaskCardProps) {
   const { task, key, setSelectedTask } = props;
 
   const { attributes, listeners, setNodeRef, transform } = useDraggable({
-    id: task.id,
+    id: task.id as string,
   });
 
   const [showDropdown, setShowDropdown] = useState(false);

@@ -2,12 +2,13 @@
 
 import Column from "@/components/Column";
 import Button from "../components/Button";
-import { COLUMNS} from "@/constants/Task.constants";
+import { COLUMNS } from "@/constants/Task.constants";
 import { DndContext, DragEndEvent } from "@dnd-kit/core";
 import { FormEvent, useEffect, useState } from "react";
 import { ITask } from "@/types/Task";
 import ModalTask from "@/components/ModalTask";
 import ModalConfirm from "@/components/ModalConfirm";
+import { supabase } from "@/lib/supabaseClient";
 
 export default function Home() {
   const [tasks, setTasks] = useState<ITask[]>([]);
@@ -18,19 +19,26 @@ export default function Home() {
   } | null>(null);
 
   //load tasks form initial render
-  useEffect(() => {
-    const storedTasks = localStorage.getItem("tasks");
-    if (storedTasks) {
-      setTasks(JSON.parse(storedTasks));
+  // useEffect(() => {
+  //   const storedTasks = localStorage.getItem("tasks");
+  //   if (storedTasks) {
+  //     setTasks(JSON.parse(storedTasks));
+  //   }
+  // }, []);
+
+  const fetchTasks = async () => {
+    const { data, error } = await supabase.from("tasks").select("*");
+    if (!error && data) {
+      setTasks(data as ITask[]);
     }
-  }, []);
+  };
 
   //save changes tasks to localstorage
   useEffect(() => {
-    localStorage.setItem("tasks", JSON.stringify(tasks));
-  }, [tasks]);
+    fetchTasks();
+  }, []);
 
-  const handleDragEnd = (event: DragEndEvent) => {
+  const handleDragEnd = async (event: DragEndEvent) => {
     const { active, over } = event;
 
     if (!over) {
@@ -45,49 +53,84 @@ export default function Home() {
         task.id === taskId ? { ...task, status: newStatus } : task
       )
     );
+
+    const { error } = await supabase
+      .from("tasks")
+      .update({ status: newStatus })
+      .eq("id", taskId);
+
+    if (error) {
+      console.error("Gagal update ke Supabase", error);
+      // Rollback jika error
+      fetchTasks();
+    }
   };
 
-  const handleCreateTask = (event: FormEvent<HTMLFormElement>) => {
+  const handleCreateTask = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     const formData = new FormData(event.currentTarget);
 
     const newTask: ITask = {
-      id: Math.random().toString(36).substring(2, 9),
+      // id: Math.random().toString(36).substring(2, 9),
       title: formData.get("title") as string,
       description: formData.get("description") as string,
       status: "TODO",
     };
 
-    setTasks((prevTasks) => [...prevTasks, newTask]);
+    // setTasks((prevTasks) => [...prevTasks, newTask]);
 
-    event.currentTarget.reset();
-    setShowModalAddTask(false);
+    // event.currentTarget.reset();
+    // setShowModalAddTask(false);
+
+    const { error } = await supabase.from("tasks").insert([newTask]);
+    if (!error) {
+      fetchTasks();
+      setShowModalAddTask(false);
+    }
   };
 
-  const handleUpdateTask = (event: FormEvent<HTMLFormElement>) => {
+  const handleUpdateTask = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     const formData = new FormData(event.currentTarget);
 
     const updatesTask: ITask = {
-      id: selectedTask?.task?.id as string,
+      // id: selectedTask?.task?.id as string,
       title: formData.get("title") as string,
       description: formData.get("description") as string,
-      status: selectedTask?.task?.status as ITask["status"],
+      // status: selectedTask?.task?.status as ITask["status"],
     };
 
-    setTasks((prevTasks) =>
-      prevTasks.map((task) => (task.id === updatesTask.id ? updatesTask : task))
-    );
+    // setTasks((prevTasks) =>
+    //   prevTasks.map((task) => (task.id === updatesTask.id ? updatesTask : task))
+    // );
 
-    event.currentTarget.reset();
-    setSelectedTask(null);
+    // event.currentTarget.reset();
+    // setSelectedTask(null);
+
+    const { error } = await supabase
+      .from("tasks")
+      .update(updatesTask)
+      .eq("id", selectedTask?.task?.id);
+    if (!error) {
+      fetchTasks();
+      setSelectedTask(null);
+    }
   };
 
-  const handleDeleteTask = () => {
-    setTasks((prevTasks) =>
-      prevTasks.filter((task) => task.id !== selectedTask?.task?.id)
-    );
-    setSelectedTask(null);
+  const handleDeleteTask = async () => {
+    // setTasks((prevTasks) =>
+    //   prevTasks.filter((task) => task.id !== selectedTask?.task?.id)
+    // );
+    // setSelectedTask(null);
+
+    const { error } = await supabase
+      .from("tasks")
+      .delete()
+      .eq("id", selectedTask?.task?.id);
+    if (!error) {
+      fetchTasks();
+      setSelectedTask(null);
+    }
   };
 
   return (
