@@ -2,7 +2,7 @@
 
 import Column from "@/components/Column";
 import Button from "../components/Button";
-import { COLUMNS, INITZIAL_TASK } from "@/constants/Task.constants";
+import { COLUMNS} from "@/constants/Task.constants";
 import { DndContext, DragEndEvent } from "@dnd-kit/core";
 import { FormEvent, useEffect, useState } from "react";
 import { ITask } from "@/types/Task";
@@ -10,7 +10,7 @@ import ModalTask from "@/components/ModalTask";
 import ModalConfirm from "@/components/ModalConfirm";
 
 export default function Home() {
-  const [tasks, setTasks] = useState<ITask[]>([...INITZIAL_TASK]);
+  const [tasks, setTasks] = useState<ITask[]>([]);
   const [showModalAddTask, setShowModalAddTask] = useState(false);
   const [selectedTask, setSelectedTask] = useState<{
     activity: string;
